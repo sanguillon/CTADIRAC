@@ -1241,7 +1241,7 @@ class ProvenanceDB( object ):
           return S_OK({'internal_key': activityDescription_last.internal_key})
 
       except NoResultFound, e:
-          return S_OK()
+          return S_OK({'internal_key': None})
       except :
           return S_OK()
       finally:
