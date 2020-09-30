@@ -1,3 +1,7 @@
+"""
+Provenance classes available for the client
+"""
+
 import json
 # # from DIRAC
 from DIRAC import S_OK, S_ERROR
@@ -6,362 +10,452 @@ from CTADIRAC.DataManagementSystem.private.JSONUtils import DMSEncoder
 
 
 class ProvBase(object):
+    """
+    Provenance Base Class for the client
+    """
 
-  def toJSON( self ):
-    """ Returns the JSON formated string that describes the agent """
-    try:
-      jsonStr = json.dumps( self, cls = DMSEncoder )
-      return S_OK( jsonStr )
-    except Exception as e:
-      return S_ERROR( str( e ) )
+    def toJSON(self):
+        """ Returns the JSON formated string that describes the agent """
+        try:
+            jsonStr = json.dumps(self, cls=DMSEncoder)
+            return S_OK(jsonStr)
+        except Exception as e:
+            return S_ERROR(str(e))
 
-  def _jsonData( self, attrNames ):
-    """ Returns the JSON formated string that describes the agent """
-    jsonData = {}
-    for attrName in attrNames :
-      # id might not be set since it is managed by SQLAlchemy
-      if not hasattr( self, attrName ):
-        continue
-      value = getattr( self, attrName )
-      jsonData[attrName] = value
+    def _jsonData(self, attrNames):
+        """ Returns the JSON formated string that describes the agent """
+        jsonData = {}
+        for attrName in attrNames:
+            # id might not be set since it is managed by SQLAlchemy
+            if not hasattr(self, attrName):
+                continue
+            value = getattr(self, attrName)
+            jsonData[attrName] = value
 
-    return jsonData
+        return jsonData
+
 
 class Activity(ProvBase):
+    """
+    IVOA Activity class
+    """
 
-  def __init__( self, id = None, name = None, startTime = None, \
-                endTime = None, comment = None, activityDescription_key = None):
+    def __init__(self, id=None, name=None, startTime=None,
+                 endTime=None, comment=None, activityDescription_key=None):
+        """Initializes the attributes of the class"""
+        self.id = id
+        self.name = name
+        self.startTime = startTime
+        self.endTime = endTime
+        self.comment = comment
+        self.activityDescription_key = activityDescription_key
 
-    self.id = id
-    self.name = name
-    self.startTime = startTime
-    self.endTime = endTime
-    self.comment = comment
-    self.activityDescription_key = activityDescription_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['id', 'name', 'startTime', 'endTime', 'comment',
+                     'activityDescription_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['id','name','startTime','endTime','comment','activityDescription_key']
-    return self._jsonData(attrNames)
 
 class Entity(ProvBase):
+    """
+    IVOA Entity class
+    """
 
-  def __init__( self, id = None, classType = None, name = None, \
-                location = None, generatedAtTime = None, \
-                invalidatedAtTime = None, comment = None, entityDescription_key = None ):
+    def __init__(self, id=None, classType=None, name=None,
+                 location=None, generatedAtTime=None,
+                 invalidatedAtTime=None, comment=None,
+                 entityDescription_key=None):
+        """Initializes the attributes of the class"""
+        self.id = id
+        self.classType = classType
+        self.name = name
+        self.location = location
+        self.generatedAtTime = generatedAtTime
+        self.invalidatedAtTime = invalidatedAtTime
+        self.comment = comment
+        self.entityDescription_key = entityDescription_key
 
-    self.id = id
-    self.classType = classType
-    self.name = name
-    self.location = location
-    self.generatedAtTime = generatedAtTime
-    self.invalidatedAtTime = invalidatedAtTime
-    self.comment = comment
-    self.entityDescription_key = entityDescription_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['id', 'classType', 'name', 'location', 'generatedAtTime',
+                     'invalidatedAtTime', 'comment', 'entityDescription_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['id','classType','name','location','generatedAtTime','invalidatedAtTime','comment', \
-                 'entityDescription_key' ]
-    return self._jsonData(attrNames)
 
 class ValueEntity(Entity):
+    """
+    IVOA ValueEntity class
+    """
 
-  def __init__( self, id = None, classType = None, name = None, location = None, generatedAtTime = None, \
-                invalidatedAtTime = None, comment = None, entityDescription_key = None, value = None ):
+    def __init__(self, id=None, classType=None, name=None, location=None,
+                 generatedAtTime=None, invalidatedAtTime=None, comment=None,
+                 entityDescription_key=None, value=None):
+        """Initializes the attributes of the class"""
+        Entity.__init__(self, id=id, name=name, location=location,
+                        generatedAtTime=generatedAtTime,
+                        invalidatedAtTime=invalidatedAtTime, comment=comment,
+                        entityDescription_key=entityDescription_key,
+                        classType=classType)
+        self.value = value
 
-    Entity.__init__(self, id = id, name = name, location = location, generatedAtTime = generatedAtTime, \
-                               invalidatedAtTime = invalidatedAtTime, comment = comment, \
-                               entityDescription_key = entityDescription_key, classType = classType)
-    self.value = value
 
 class DatasetEntity(Entity):
+    """
+    IVOA DatasetEntity class
+    """
 
-  def __init__( self, id = None, classType = None, name = None, location = None,\
-                generatedAtTime = None, invalidatedAtTime = None, comment = None, entityDescription_key = None,\
-                ctadirac_guid = None):
+    def __init__(self, id=None, classType=None, name=None, location=None,
+                 generatedAtTime=None, invalidatedAtTime=None, comment=None,
+                 entityDescription_key=None, ctadirac_guid=None):
+        Entity.__init__(self, id, classType, name, location, generatedAtTime,
+                        invalidatedAtTime, comment, entityDescription_key)
+        self.ctadirac_guid = ctadirac_guid
 
-    Entity.__init__(self,  id, classType, name, location, generatedAtTime, \
-                 invalidatedAtTime, comment, entityDescription_key)
-    self.ctadirac_guid = ctadirac_guid
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
+        attrNames = ['id', 'classType', 'name', 'location', 'generatedAtTime',
+                     'invalidatedAtTime', 'comment',
+                     'entityDescription_key', 'value']
+        return self._jsonData(attrNames)
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
-
-    attrNames = ['id','classType','name','location','generatedAtTime','invalidatedAtTime','comment', \
-                 'entityDescription_key', 'value' ]
-    return self._jsonData(attrNames)
 
 class Used(ProvBase):
+    """
+    IVOA Used class
+    """
 
-  def __init__( self, role = None, time = None, \
-                activity_key = None, entity_key = None , usageDescription_key = None ):
+    def __init__(self, role=None, time=None, activity_key=None,
+                 entity_key=None, usageDescription_key=None):
+        """Initializes the attributes of the class"""
+        self.role = role
+        self.time = time
+        self.activity_key = activity_key
+        self.entity_key = entity_key
+        self.usageDescription_key = usageDescription_key
 
-    self.role = role
-    self.time = time
-    self.activity_key = activity_key
-    self.entity_key = entity_key
-    self.usageDescription_key = usageDescription_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['role', 'time', 'activity_key', 'entity_key',
+                     'usageDescription_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['role','time','activity_key','entity_key','usageDescription_key']
-    return self._jsonData(attrNames)
 
 class WasGeneratedBy(ProvBase):
 
-  def __init__( self, id = None, role = None, activity_key = None, \
-                entity_key = None, generationDescription_key = None ):
+    def __init__(self, id=None, role=None, activity_key=None,
+                 entity_key=None, generationDescription_key=None):
+        """Initializes the attributes of the class"""
+        self.role = role
+        self.activity_key = activity_key
+        self.entity_key = entity_key
+        self.generationDescription_key = generationDescription_key
 
-    self.role = role
-    self.activity_key = activity_key
-    self.entity_key = entity_key
-    self.generationDescription_key = generationDescription_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['role', 'activity_key', 'entity_key',
+                     'generationDescription_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['role','activity_key','entity_key','generationDescription_key']
-    return self._jsonData(attrNames)
 
 class Agent(ProvBase):
+    """
+    IVOA Agent class
+    """
 
-  def __init__( self, id = None, name = None, type = None, email = None, \
-                comment = None, affiliation = None, phone = None, \
-                address = None, url = None):
+    def __init__(self, id=None, name=None, type=None, email=None,
+                 comment=None, affiliation=None, phone=None,
+                 address=None, url=None):
+        """Initializes the attributes of the class"""
+        self.id = id
+        self.name = name
+        self.type = type
+        self.email = email
+        self.comment = comment
+        self.affiliation = affiliation
+        self.phone = phone
+        self.address = address
+        self.url = url
 
-    self.id = id
-    self.name = name
-    self.type = type
-    self.email = email
-    self.comment = comment
-    self.affiliation = affiliation
-    self.phone = phone
-    self.address = address
-    self.url = url
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ["id", "name", "type", "email", "comment", "affiliation",
+                     "phone", "address", "url"]
+        return self._jsonData(attrNames)
 
-    attrNames = ["id", "name", "type", "email", "comment", "affiliation", "phone", "address", "url"]
-    return self._jsonData(attrNames)
 
 class WasAttributedTo(ProvBase):
+    """
+    IVOA WasAttributedTo class
+    """
 
-  def __init__( self, role = None , entity_key = None, agent_key = None):
+    def __init__(self, role=None, entity_key=None, agent_key=None):
+        self.role = role
+        self.entity_key = entity_key
+        self.agent_key = agent_key
 
-    self.role = role
-    self.entity_key = entity_key
-    self.agent_key = agent_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['role', 'entity_key', 'agent_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['role','entity_key','agent_key']
-    return self._jsonData(attrNames)
 
 class WasAssociatedWith(ProvBase):
+    """
+    IVOA WasAssociatedWith class
+    """
 
-  def __init__( self, role = None, activity_key = None, agent_key = None):
+    def __init__(self, role=None, activity_key=None, agent_key=None):
+        self.role = role
+        self.activity_key = activity_key
+        self.agent_key = agent_key
 
-    self.role = role
-    self.activity_key = activity_key
-    self.agent_key = agent_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['role', 'activity_key', 'agent_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['role','activity_key','agent_key']
-    return self._jsonData(attrNames)
 
 class ActivityDescription(ProvBase):
+    """
+    IVOA ActivityDescription class
+    """
 
-  def __init__(self, name=None, version=None, description=None, \
-               type=None, subtype=None, doculink=None):
-    self.name = name
-    self.version = version
-    self.description = description
-    self.type = type
-    self.subtype = subtype
-    self.doculink = doculink
+    def __init__(self, name=None, version=None, description=None,
+                 type=None, subtype=None, doculink=None):
+        """Initializes the attributes of the class"""
+        self.name = name
+        self.version = version
+        self.description = description
+        self.type = type
+        self.subtype = subtype
+        self.doculink = doculink
 
-  def _getJSONData(self):
-    """ Returns the data that have to be serialized by JSON """
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-    attrNames = ['name', 'type', 'subtype', 'version', 'doculink', 'description']
-    return self._jsonData(attrNames)
+        attrNames = ['name', 'type', 'subtype', 'version', 'doculink',
+                     'description']
+        return self._jsonData(attrNames)
+
 
 class EntityDescription(ProvBase):
+    """
+    IVOA EntityDescription class
+    """
 
-  def __init__( self, name = None, type = None, description = None, doculink = None, classType = None):
+    def __init__(self, name=None, type=None, description=None, doculink=None,
+                 classType=None):
+        """Initializes the attributes of the class"""
+        self.name = name
+        self.type = type
+        self.description = description
+        self.doculink = doculink
+        self.classType = classType
 
-    self.name = name
-    self.type = type
-    self.description = description
-    self.doculink = doculink
-    self.classType = classType
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['id', 'name', 'type', 'description', 'doculink',
+                     'classType']
+        return self._jsonData(attrNames)
 
-    attrNames = ['id','name','type','description','doculink','classType']
-    return self._jsonData(attrNames)
 
 class DatasetDescription(EntityDescription):
 
-  def __init__( self, name = None, type = None, description = None, doculink = None, classType = None, \
-                contentType = None):
+    def __init__(self, name=None, type=None, description=None, doculink=None,
+                 classType=None, contentType=None):
+        EntityDescription.__init__(self, name=name, type=type,
+                                   description=description,
+                                   doculink=doculink, classType=classType)
+        self.contentType = contentType
 
-    EntityDescription.__init__(self, name = name, type = type, description = description, \
-                               doculink = doculink, classType = classType)
-    self.contentType = contentType
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData(self):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['name', 'type', 'description', 'doculink', 'contentType']
+        return self._jsonData(attrNames)
 
-    attrNames = ['name', 'type', 'description', 'doculink', 'contentType']
-    return self._jsonData(attrNames)
 
 class ValueDescription(EntityDescription):
+    """
+    IVOA ValueDescription class
+    """
 
-  def __init__( self, name = None, type = None, description = None, doculink = None, classType = None,\
-                valueType = None, unit = None, ucd = None, utype = None):
-    EntityDescription.__init__(self, name = name, type = type, description = description, \
-                               doculink = doculink, classType = classType)
-    self.valueType = valueType
-    self.unit = unit
-    self.ucd = ucd
-    self.utype = utype
+    def __init__(self, name=None, type=None, description=None, doculink=None,
+                 classType=None, valueType=None, unit=None, ucd=None,
+                 utype=None):
+        EntityDescription.__init__(self, name=name, type=type,
+                                   description=description,
+                                   doculink=doculink, classType=classType)
+        self.valueType = valueType
+        self.unit = unit
+        self.ucd = ucd
+        self.utype = utype
 
-  def _getJSONData(self):
-    """ Returns the data that have to be serialized by JSON """
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-    attrNames = ['name', 'type', 'description', 'doculink', 'valueType', 'unit', 'ucd', 'utype']
-    return self._jsonData(attrNames)
+        attrNames = ['name', 'type', 'description', 'doculink', 'valueType',
+                     'unit', 'ucd', 'utype']
+        return self._jsonData(attrNames)
+
 
 class UsageDescription(ProvBase):
 
-  def __init__( self, role = None, description = None, type = None, multiplicity = 1, \
-                activityDescription_key = None, entityDescription_key = None):
+    def __init__(self, role=None, description=None, type=None, multiplicity=1,
+                 activityDescription_key=None, entityDescription_key=None):
+        """Initializes the attributes of the class"""
+        self.role = role
+        self.description = description
+        self.type = type
+        self.multiplicity = multiplicity
+        self.activityDescription_key = activityDescription_key
+        self.entityDescription_key = entityDescription_key
 
-    self.role = role
-    self.description = description
-    self.type = type
-    self.multiplicity = multiplicity
-    self.activityDescription_key = activityDescription_key
-    self.entityDescription_key = entityDescription_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['role', 'description', 'type', 'multiplicity',
+                     'activityDescription_key', 'entityDescription_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['role','description','type','multiplicity','activityDescription_key','entityDescription_key']
-    return self._jsonData(attrNames)
 
 class GenerationDescription(ProvBase):
+    """
+    IVOA GenerationDescription class
+    """
 
-  def __init__( self, role = None, description = None, type = None, multiplicity = 1, \
-                activityDescription_key = None, entityDescription_key = None):
+    def __init__(self, role=None, description=None, type=None, multiplicity=1,
+                 activityDescription_key=None, entityDescription_key=None):
+        """Initializes the attributes of the class"""
+        self.role = role
+        self.description = description
+        self.type = type
+        self.multiplicity = multiplicity
+        self.activityDescription_key = activityDescription_key
+        self.entityDescription_key = entityDescription_key
 
-    self.role = role
-    self.description = description
-    self.type = type
-    self.multiplicity = multiplicity
-    self.activityDescription_key = activityDescription_key
-    self.entityDescription_key = entityDescription_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData( self ):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['role', 'description', 'type', 'multiplicity',
+                     'activityDescription_key', 'entityDescription_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['role','description','type','multiplicity','activityDescription_key','entityDescription_key']
-    return self._jsonData(attrNames)
 
 class WasConfiguredBy(ProvBase):
+    """
+    IVOA WasConfiguredBy class
+    """
 
-  def __init__(self, id=None, artefactType='Parameter', activity_key = None, parameter_key = None, configFile_key = None):
+    def __init__(self, id=None, artefactType='Parameter', activity_key=None,
+                 parameter_key=None, configFile_key=None):
+        self.id = id
+        self.artefactType = artefactType
+        self.activity_key = activity_key
+        self.parameter_key = parameter_key
+        self.configFile_key = configFile_key
 
-    self.id = id
-    self.artefactType = artefactType
-    self.activity_key = activity_key
-    self.parameter_key = parameter_key
-    self.configFile_key = configFile_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData(self):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['id', 'artefactType', 'activity_key', 'parameter_key',
+                     'configFile_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['id', 'artefactType', 'activity_key', 'parameter_key', 'configFile_key']
-    return self._jsonData(attrNames)
 
 class Parameter(ProvBase):
+    """
+    IVOA Parameter class
+    """
 
-  def __init__(self, id=None, value = None, name = None, parameterDescription_key = None):
+    def __init__(self, id=None, value=None, name=None,
+                 parameterDescription_key=None):
+        """Initializes the attributes of the class"""
+        self.id = id
+        self.value = value
+        self.name = name
+        self.parameterDescription_key = parameterDescription_key
 
-    self.id = id
-    self.value = value
-    self.name = name
-    self.parameterDescription_key = parameterDescription_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData(self):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['id', 'value', 'name', 'parameterDescription_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['id', 'value', 'name', 'parameterDescription_key']
-    return self._jsonData(attrNames)
 
 class ConfigFile(ProvBase):
 
-  def __init__(self, name = None, location = None, comment = None, configFileDescription_key = None):
+    def __init__(self, name=None, location=None, comment=None,
+                 configFileDescription_key=None):
+        self.name = name
+        self.location = location
+        self.comment = comment
+        self.configFileDescription_key = configFileDescription_key
 
-    self.name = name
-    self.location = location
-    self.comment = comment
-    self.configFileDescription_key = configFileDescription_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData(self):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['name', 'location', 'comment',
+                     'configFileDescription_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['name', 'location', 'comment', 'configFileDescription_key']
-    return self._jsonData(attrNames)
 
 class ParameterDescription(ProvBase):
+    """
+    IVOA ParameterDescription class
+    """
 
-  def __init__(self, name = None, valueType = None, description = None, unit = None, ucd = None, \
-               utype = None, min = None, max = None, default = None, options = None, activityDescription_key = None):
+    def __init__(self, name=None, valueType=None, description=None, unit=None,
+                 ucd=None, utype=None, min=None, max=None, default=None,
+                 options=None, activityDescription_key=None):
+        self.name = name
+        self.valueType = valueType
+        self.description = description
+        self.unit = unit
+        self.ucd = ucd
+        self.utype = utype
+        self.min = min
+        self.max = max
+        self.default = default
+        self.options = options
+        self.activityDescription_key = activityDescription_key
 
-    self.name = name
-    self.valueType = valueType
-    self.description = description
-    self.unit = unit
-    self.ucd = ucd
-    self.utype = utype
-    self.min = min
-    self.max = max
-    self.default = default
-    self.options = options
-    self.activityDescription_key = activityDescription_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData(self):
-    """ Returns the data that have to be serialized by JSON """
+        attrNames = ['name', 'valueType', 'description', 'unit', 'ucd',
+                     'utype', 'min', 'max', 'default', 'options',
+                     'activityDescription_key']
+        return self._jsonData(attrNames)
 
-    attrNames = ['name', 'valueType', 'description', 'unit', 'ucd', 'utype', 'min', 'max', 'default', 'options',\
-                 'activityDescription_key']
-    return self._jsonData(attrNames)
 
 class ConfigFileDescription(ProvBase):
+    """
+    IVOA ConfigFileDescription class
+    """
 
-  def __init__(self, id = None, name = None, contentType = None, description = None, activityDescription_key = None):
+    def __init__(self, id=None, name=None, contentType=None, description=None,
+                 activityDescription_key=None):
+        """Initializes the attributes of the class"""
+        self.id = id
+        self.name = name
+        self.contentType = contentType
+        self.description = description
+        self.activityDescription_key = activityDescription_key
 
-    self.id = id
-    self.name = name
-    self.contentType = contentType
-    self.description = description
-    self.activityDescription_key = activityDescription_key
+    def _getJSONData(self):
+        """ Returns the data that have to be serialized by JSON """
 
-  def _getJSONData(self):
-    """ Returns the data that have to be serialized by JSON """
-
-    attrNames = ['name', 'contentType', 'description','activityDescription_key']
-    return self._jsonData(attrNames)
-
+        attrNames = ['name', 'contentType', 'description',
+                     'activityDescription_key']
+        return self._jsonData(attrNames)
