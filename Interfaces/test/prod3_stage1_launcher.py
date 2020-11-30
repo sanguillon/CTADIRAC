@@ -1,9 +1,12 @@
-""" Launcher script to launch a Prod4CorsikaLSTMagicJob
+""" Launcher script to launch a Prod3 ctapipe stage 1 job
 on the WMS or create a Transformation.
 
-    https://forge.in2p3.fr/issues/3492
-                    JB, February 2019
+  September 8th 2020 - J. Bregeon
+                  bregeon@in2p3.fr
 """
+
+import json
+from copy import copy
 
 from DIRAC.Core.Base import Script
 Script.setUsageMessage('\n'.join([__doc__.split('\n')[1],
@@ -11,24 +14,24 @@ Script.setUsageMessage('\n'.join([__doc__.split('\n')[1],
                                   '  %s mode file_path (trans_name) group_size' % Script.scriptName,
                                   'Arguments:',
                                   '  mode: WMS for testing, TS for production',
-                                  '  site: either Paranal or LaPalma',
-                                  '  particle: in gamma, gamma-diffuse, electron, proton',
-                                  '  pointing: North or South',
-                                  '  zenith: 20, 40 or 60',
-                                  '  n shower: 100 for testing',
-                                  '\ne.g: python %s.py WMS LaPalma gamma North 20 100' % Script.scriptName,
+                                  '  trans_name: name of the transformation',
+                                  '  input_dataset_name: name of the input dataset',
+                                  '  group_size: n files to process',
+                                  '\ne.g: python %s.py WMS MyNewTrans Prod4-Paranal-gamma-North-DL-3 5' % Script.scriptName,
                                  ]))
 
 Script.parseCommandLine()
 
 import DIRAC
 from DIRAC.TransformationSystem.Client.Transformation import Transformation
-from CTADIRAC.Interfaces.API.Prod4CorsikaLSTMagicJob import Prod4CorsikaLSTMagicJob
+# from CTADIRAC.Interfaces.API.Prod3Stage1Job import Prod3Stage1Job
+from Prod3Stage1Job import Prod3Stage1Job
 from DIRAC.Core.Workflow.Parameter import Parameter
 from DIRAC.Interfaces.API.Dirac import Dirac
+from CTADIRAC.Core.Utilities.tool_box import get_dataset_MQ
 
 
-def submit_trans(job, trans_name):
+def submit_trans(job, trans_name, input_meta_query, group_size):
     """ Create a transformation executing the job workflow
     """
     DIRAC.gLogger.notice('submit_trans : %s' % trans_name)
@@ -39,10 +42,12 @@ def submit_trans(job, trans_name):
 
     trans = Transformation()
     trans.setTransformationName(trans_name)  # this must be unique
-    trans.setType("MCSimulation")
-    trans.setDescription("Prod4 Corsika TS")
-    trans.setLongDescription("Prod4 Corsika LST-MAGIC simulation")  # mandatory
+    trans.setType("DataReprocessing")
+    trans.setDescription("CTAPIPE Stage 1 TS")
+    trans.setLongDescription("CTAPIPE Stage 1 processing")  # mandatory
     trans.setBody(job.workflow.toXML())
+    trans.setGroupSize(group_size)
+    trans.setInputMetaQuery(input_meta_query)
     result = trans.addTransformation()  # transformation is created here
     if not result['OK']:
         return result
@@ -56,57 +61,66 @@ def submit_wms(job):
     @todo launch job locally
     """
     dirac = Dirac()
-    job.setJobGroup('Prod4CorsikaSSTJob')
+    base_path = '/vo.cta.in2p3.fr/MC/PROD3/LaPalma/gamma-diffuse/simtel/1600/Data/000xxx'
+    input_data = ['%s/gamma_20deg_0deg_run100___cta-prod3-demo-2147m-LaPalma-baseline_cone10.simtel.gz' % base_path]
+
+    job.setInputData(input_data)
+    job.setJobGroup('ctapipe_stage1_prod3')
     result = dirac.submitJob(job)
     if result['OK']:
         Script.gLogger.notice('Submitted job: ', result['Value'])
     return result
 
-def run_corsika_sst(args):
-    """ Simple wrapper to create a Prod4CorsikaLSTMagicJob and setup parameters
+def launch_job(args):
+    """ Simple launcher to instanciate a Job and setup parameters
         from positional arguments given on the command line.
 
         Parameters:
-        args -- mode (trans_name)
+        args -- mode (trans_name dataset_name group_size)
     """
-    DIRAC.gLogger.notice('run_corsika_sst')
+    DIRAC.gLogger.notice('Launching jobs')
     # get arguments
     mode = args[0]
 
-    # job setup
-    job = Prod4CorsikaLSTMagicJob()
-    # override for testing
-    job.setName('Prod4_Corsika_LSTMagic')
-    # parameters from command line
-    job.set_site(args[1])
-    job.set_particle(args[2])
-    job.set_pointing_dir(args[3])
-    job.zenith_angle = args[4]
-    job.n_shower = args[5]
+    if mode == 'TS':
+        trans_name = args[1]
+        dataset_name = args[2]
+        group_size = int(args[3])
 
+    # job setup - 72 hours
+    job = Prod3Stage1Job(cpuTime=259200.)
+    job.stage1_config = 'stage1_config_Prod3_LaPalma_Baseline_NSB1x.json'
+    # override for testing
+    job.setName('Prod3_ctapipe_stage1')
     # output
     job.setOutputSandbox(['*Log.txt'])
 
     # specific configuration
     if mode == 'WMS':
         job.base_path = '/vo.cta.in2p3.fr/user/b/bregeon'
-        job.start_run_number = '1000'
-        job.run_number = '31'
+        job.ts_task_id = '2'
+        simtel_meta_data = {'array_layout': 'Baseline', 'site': 'LaPalma',
+                           'particle': 'gamma', 'phiP': 180.0, 'thetaP': 20.0}
+
+        job.set_meta_data(simtel_meta_data)
+        job.set_file_meta_data({'nsb':1})
         job.setupWorkflow(debug=True)
         # subtmit to the WMS for debug
         job.setDestination('LCG.IN2P3-CC.fr')
-        # job.setDestination('LCG.CIEMAT.es')
         result = submit_wms(job)
     elif mode == 'TS':
-        job.base_path = '/vo.cta.in2p3.fr/MC/PROD4/'
-#        job.start_run_number = '100000'        
-        job.run_number = '@{JOB_ID}'  # dynamic
+        job.base_path = '/vo.cta.in2p3.fr/MC/PROD3_Test'
+        input_meta_query = get_dataset_MQ(dataset_name)
+        # refine output meta data if needed
+        output_meta_data = copy(input_meta_query)
+        job.set_meta_data(output_meta_data)
+        job.set_file_meta_data(nsb=output_meta_data['nsb']['='],
+                               split=output_meta_data['split'])
+        input_meta_query = {}
+        job.ts_task_id = '@{JOB_ID}'  # dynamic
         job.setupWorkflow(debug=False)
-        job.setType('MCSimulation')
-        tag = 'v2'
-        trans_name = 'MC_Prod4_CorsikaLSTMagic_%s_%s_%s_%s%s' %\
-                    (job.cta_site, job.particle, job.pointing_dir, job.zenith_angle, tag)
-        result = submit_trans(job, trans_name)
+        job.setType('EvnDisp3')  # mandatory *here*
+        result = submit_trans(job, trans_name, input_meta_query, group_size)
     else:
         DIRAC.gLogger.error('1st argument should be the job mode: WMS or TS,\n\
                              not %s' % mode)
@@ -118,10 +132,10 @@ def run_corsika_sst(args):
 if __name__ == '__main__':
 
     arguments = Script.getPositionalArgs()
-    if len(arguments) != 6:
+    if len(arguments) not in [1, 4]:
         Script.showHelp()
     try:
-        result = run_corsika_sst(arguments)
+        result = launch_job(arguments)
         if not result['OK']:
             DIRAC.gLogger.error(result['Message'])
             DIRAC.exit(-1)

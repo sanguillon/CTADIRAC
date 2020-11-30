@@ -22,7 +22,7 @@ Script.parseCommandLine()
 import DIRAC
 from DIRAC.TransformationSystem.Client.Transformation import Transformation
 from DIRAC.Core.Workflow.Parameter import Parameter
-from CTADIRAC.Interfaces.API.Prod3MCPipeTestJob import Prod3MCPipeTestJob
+from CTADIRAC.Interfaces.API.Prod3MCPipeBaselineJobC7 import Prod3MCPipeBaselineJobC7
 from DIRAC.Interfaces.API.Dirac import Dirac
 
 
@@ -38,9 +38,9 @@ def submit_trans(job, trans_name):
     job.setType('MCSimulation') ## Used for the JobType plugin
 
     trans = Transformation()
-    trans.setTransformationName(trans_name)
+    #trans.setTransformationName(trans_name)
     trans.setType("MCSimulation")
-    trans.setDescription("MC Prod3 BaseLine Corsika7 test")
+    trans.setDescription("MC Prod3b Paranal BaseLine Corsika77100")
     trans.setLongDescription("corsika-simtel production")  # mandatory
     trans.setBody(job.workflow.toXML())
     result = trans.addTransformation()  # transformation is created here
@@ -83,15 +83,16 @@ def run_prod3( args = None ):
     nShower= args[6]
 
     ### Main Script ###
-    job = Prod3MCPipeTestJob()
+    job = Prod3MCPipeBaselineJobC7()
 
     # override for testing
-    job.setName('BL_Corsika7_Test_Paranal_20deg_%s'%particle)
+    job.setName('BL_Corsika7_Paranal_20deg_%s'%particle)
 
     # package and version
     job.setPackage('corsika_simtelarray')
-    job.setVersion( '2019-09-03' )  # final with fix for gamma-diffuse
-    job.configuration_id=-1
+    job.setVersion( '2020-05-01' )
+    job.compiler='gcc83_matchcpu'
+    job.configuration_id=6
 
     # layout, site, particle, pointing direction, zenith angle
     # demo, LaPalma,  gamma, South,  20
@@ -116,16 +117,14 @@ def run_prod3( args = None ):
 
     # specific configuration
     if mode == 'WMS':
-        job.base_path = '/vo.cta.in2p3.fr/user/b/bregeon'
+        job.base_path = '/vo.cta.in2p3.fr/user/a/arrabito'
         job.start_run_number = '0'
         job.run_number = '1001'
         job.setupWorkflow(debug=True)
         # subtmit to the WMS for debug
-        job.setDestination('LCG.IN2P3-CC.fr')
-        # job.setDestination('LCG.CIEMAT.es')
         result = submit_wms(job)
     elif mode == 'TS':
-        job.base_path = '/vo.cta.in2p3.fr/MC/PRODTest/'
+        job.base_path = '/vo.cta.in2p3.fr/MC/PROD3/'
         job.start_run_number = '0'
         job.run_number = '@{JOB_ID}'  # dynamic
         job.setupWorkflow(debug=False)

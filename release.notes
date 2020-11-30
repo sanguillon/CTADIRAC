@@ -1,3 +1,83 @@
+[v1r62p0]
+* MS PM : Depends = DIRAC:v7r1p20
+      DIRAC support for ElasticSearch 7
+
+[v1r61px]
+* JB : new interface to ctapipe merge dl1 tool
+      cone10 bug fix for Prod5b
+      new Job and run Interface EvnDispProd5SingJob
+
+[v1r61p0]
+* JB : add high energy option to Prod3b La Palma
+       new Job and run Interface EvnDispProd3SCTSingJob
+       new optimized Prod5bMCPipeNSBJob
+
+[v1r60p2]
+* JB : bug fix verify_corsika to verifysteps
+
+[v1r60p1]
+* JB : Update Prod5MCPipeNSBJob for Prod5b
+       add verify_corsika to verifysteps
+
+[v1r60p0]
+* JB : New interface to ctapipe-stage1-process
+
+[v1r59p2]
+* JB/LA : New ProductionSystem launcher script for Prod5
+          many mino small fixes for Prod5
+
+[v1r59p1]
+* JB : New EvnDisp interface and launcher for Prod5
+       EvnDispProd5Job and prod5_evndisp_launcher.py
+       Bug fixes to Prod5MCPipeNSBJob.py and prod5_mcpipe_nsb_launcher.py
+       New user interface to Production System prod5_ps_launcher.py
+
+[v1r59p0]
+* JB : New interface and launcher for Prod5
+       Prod5MCPipeNSBJob.py and prod5_mcpipe_nsb_launcher.py
+
+[v1r58p13]
+* LA : BUGFIX in SoftwareManager to handle tarballs
+
+[v1r58p12]
+* LA : NEW interfaces to run MC chain with corsika 7
+
+[v1r58p11]
+* LA : BUGFIX in data management scripts
+
+[v1r58p10]
+* LA : BUGFIX in SoftwareManager
+
+[v1r58p9]
+* LA : CHANGE in SoftwareManager: generalize gcc ver choice
+
+[v1r58p8]
+* LA : CHANGE in SoftwareManager: add gcc83_avx2 case
+
+[v1r58p7]
+* LA : BUGFIX in SoftwareManager (gcc48_avx512)
+
+[v1r58p6]
+* LA : BUGFIX on SoftwareManager
+
+[v1r58p5]
+* LA : Update SoftwareManager: include the case of non advanced instructions available
+
+[v1r58p4]
+* JB : Change default repo for SoftwareManager, add switch to cta-prod-setup-software
+
+[v1r58p3]
+* LA : Clean obsolete Resources and ProductionSystem sections
+
+[v1r58p2]
+* LA : Add checks in Prod3DataManager
+
+[v1r58p1]
+* MS : Update Provenance Service
+
+[v1r58]
+* LA : Change deependence to DIRAC v7r0p18
+
 [v1r57]
 * LA : Change deependence to DIRAC v7r0p17
 

@@ -13,10 +13,10 @@ import collections
 # DIRAC imports
 import DIRAC
 # Base class
-from CTADIRAC.Interfaces.API.Prod3MCPipeBaselineJob import Prod3MCPipeBaselineJob
+from Prod3MCPipeBaselineJob import Prod3MCPipeBaselineJob
 
 
-class Prod3MCPipeTestJob(Prod3MCPipeBaselineJob):
+class Prod3MCPipeBaselineJobC7(Prod3MCPipeBaselineJob):
   """ Job extension class for Prod3 MC NSB simulations,
       takes care of running corsika piped into simtel
       3 output files are created
@@ -31,6 +31,7 @@ class Prod3MCPipeTestJob(Prod3MCPipeBaselineJob):
     Prod3MCPipeBaselineJob.__init__(self, cpuTime)
     self.package='corsika_simtelarray'
     self.version='2019-09-03'
+    self.compiler='gcc48_default'
 
 
   def setupWorkflow(self, debug=False):
@@ -52,10 +53,7 @@ class Prod3MCPipeTestJob(Prod3MCPipeBaselineJob):
 
     # step 2
     swStep = self.setExecutable( 'cta-prod-setup-software',
-                              arguments='-p %s -v %s -a simulations -g gcc48_avx2'% (self.package, self.version),\
-                              # arguments='-p %s -v %s'% (self.package, self.version),\
-    # swStep = self.setExecutable( 'cta-prod3-setupsw',
-    #                           arguments='%s %s simulations centos7-gcc48'% (self.package, self.version),\
+                              arguments='-p %s -v %s -a simulations -g %s'% (self.package, self.version, self.compiler),\
                               logFile='SetupSoftware_Log.txt')
     swStep['Value']['name'] = 'Step%i_SetupSoftware' % iStep
     swStep['Value']['descr_short'] = 'Setup software'
@@ -71,19 +69,23 @@ class Prod3MCPipeTestJob(Prod3MCPipeBaselineJob):
         DIRAC.gLogger.error('No shell script associated')
         DIRAC.exit(-1)
 
-    csStep = self.setExecutable( prod_script, \
-                              arguments = '--start_run %s --run %s %s %s %s %s' % \
-                                         ( self.start_run_number, self.run_number, \
-                                           self.cta_site,\
-                                           self.particle, self.pointing_dir, self.zenith_angle ), \
-                              logFile='CorsikaSimtel_Log.txt')
+    if 'gcc83' in self.compiler:
+        prod_exe = './dirac_singularity_run'
+        prod_args = '%s --start_run %s --run %s %s %s %s %s' % ( prod_script, self.start_run_number, self.run_number, \
+                                           self.cta_site, self.particle, self.pointing_dir, self.zenith_angle )
+    else:
+        prod_exe = prod_script
+        prod_args = '--start_run %s --run %s %s %s %s %s' % ( self.start_run_number, self.run_number, \
+                                           self.cta_site, self.particle, self.pointing_dir, self.zenith_angle )
+
+    csStep = self.setExecutable( prod_exe, arguments = prod_args, logFile='CorsikaSimtel_Log.txt')
     csStep['Value']['name']='Step%i_CorsikaSimtel'%iStep
     csStep['Value']['descr_short']='Run Corsika piped into simtel'
     iStep+=1
 
     # step 4 verify merged data
     mgvStep = self.setExecutable( 'cta-prod3-verifysteps', \
-                              arguments = "generic %0d 1000 '%s/Data/*.zst'"%\
+                              arguments = "generic %0d 100 '%s/Data/*.zst'"%\
                                           (self.N_output_files, self.inputpath),\
                               logFile='Verify_Simtel_Log.txt')
     mgvStep['Value']['name']='Step%i_VerifySimtel'%iStep
@@ -129,7 +131,7 @@ class Prod3MCPipeTestJob(Prod3MCPipeBaselineJob):
     #filemetadata = {'runNumber': self.run_number, 'nsb':1}
     filemetadata = {'runNumber': self.run_number}
     file_md_json = json.dumps(filemetadata)
-    outputpattern = './Data/sim_telarray/*/*/Data/*baseline.simtel.zst'
+    outputpattern = './Data/sim_telarray/*/*/Data/*baseline*.simtel.zst'
     dmStep = self.setExecutable('../CTADIRAC/Core/scripts/cta-analysis-managedata.py',
                               arguments = "'%s' '%s' '%s' %s '%s' %s %s '%s'" %\
                               (mdjson, mdfieldjson, file_md_json, self.basepath,
@@ -139,7 +141,7 @@ class Prod3MCPipeTestJob(Prod3MCPipeBaselineJob):
     dmStep['Value']['descr_short'] = 'Save data files to SE and register them in DFC'
     iStep += 1
     ## log file
-    outputpattern = './Data/sim_telarray/*/*/Log/*baseline.log.gz'
+    outputpattern = './Data/sim_telarray/*/*/Log/*baseline*.log.gz'
     dmStep = self.setExecutable('../CTADIRAC/Core/scripts/cta-analysis-managedata.py',
                               arguments = "'%s' '%s' '%s' %s '%s' %s %s '%s' Log" % \
                               (mdjson, mdfieldjson, file_md_json, self.basepath,
@@ -149,7 +151,7 @@ class Prod3MCPipeTestJob(Prod3MCPipeBaselineJob):
     dmStep['Value']['descr_short'] = 'Save log files to SE and register them in DFC'
     iStep += 1
     ## histogram
-    outputpattern = './Data/sim_telarray/*/*/Histograms/*baseline.hdata.gz'
+    outputpattern = './Data/sim_telarray/*/*/Histograms/*baseline*.hdata.gz'
     dmStep = self.setExecutable('../CTADIRAC/Core/scripts/cta-analysis-managedata.py',
                               arguments = "'%s' '%s' '%s' %s '%s' %s %s '%s' Histograms" % \
                               (mdjson, mdfieldjson, file_md_json, self.basepath,
